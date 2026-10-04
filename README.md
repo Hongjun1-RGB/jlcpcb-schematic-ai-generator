@@ -41,4 +41,6 @@ PowerShell：
 - `check_schematic_layout.js`：可复用的布局与连接检查函数。
 - `schematic-block-preview.svg`：通用分区框选风格示例。
 
+![通用分区框选示例](./schematic-block-preview.svg)
+
 以后直接要求 AI 使用 `jlcpcb-schematic-ai-generator` 画或修改原理图即可。
