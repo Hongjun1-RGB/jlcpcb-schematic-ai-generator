@@ -50,7 +50,7 @@ function Get-Targets {
 }
 
 foreach ($target in Get-Targets) {
-    $destination = Join-Path $target.Root "easyeda-schematic-builder"
+    $destination = Join-Path $target.Root "jlcpcb-schematic-ai-generator"
     New-Item -ItemType Directory -Path $destination -Force | Out-Null
 
     Get-ChildItem -LiteralPath $skillRoot -Force |
@@ -64,7 +64,7 @@ foreach ($target in Get-Targets) {
 
     $frontmatter = Get-Content -LiteralPath $installedSkill -TotalCount 20
     if (-not ($frontmatter | Where-Object {
-        $_ -match "^name:\s*easyeda-schematic-builder\s*$"
+        $_ -match "^name:\s*jlcpcb-schematic-ai-generator\s*$"
     })) {
         throw "Install failed for $($target.Name): skill name is incorrect"
     }

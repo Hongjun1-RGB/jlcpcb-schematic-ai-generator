@@ -1,7 +1,7 @@
 # EasyEDA API Playbook
 
-Use this reference with the `easyeda-api` skill. The live API runs inside
-EasyEDA Pro and is reached through the bridge.
+Use this reference with the `easyeda-api` skill. Code runs inside EasyEDA Pro
+through the bridge.
 
 ## Bridge
 
@@ -25,26 +25,26 @@ Invoke-RestMethod -Uri "http://127.0.0.1:49620/execute" `
   -Method Post -ContentType "application/json" -Body $body -TimeoutSec 120
 ```
 
-Always open the target page explicitly when a result looks stale:
+Open the active page explicitly if results appear stale:
 
 ```javascript
 await eda.dmt_EditorControl.openDocument('PAGE_UUID');
 await new Promise(r => setTimeout(r, 300));
 ```
 
-## Component and Pin Inspection
-
-Get components and their placement:
+## Components and Pins
 
 ```javascript
-const comps = await eda.sch_PrimitiveComponent.getAll();
-const component = comps.find(c => c.getState_Designator() === 'U1');
+const components = await eda.sch_PrimitiveComponent.getAll();
+const component = components.find(
+  item => item.getState_Designator() === 'U1'
+);
 const id = component.getState_PrimitiveId();
 const bbox = await eda.sch_Primitive.getPrimitivesBBox([id]);
 const pins = await eda.sch_PrimitiveComponent.getAllPinsByPrimitiveId(id);
 ```
 
-Pin state methods include:
+Common pin state methods:
 
 - `getState_PinNumber()`
 - `getState_PinName()`
@@ -52,11 +52,13 @@ Pin state methods include:
 - `getState_Y()`
 - `getState_NoConnected()`
 
-`sch_PrimitivePin.modify(pin, { noConnected: true })` can report success while
-failing to persist in some versions. Use:
+`sch_PrimitivePin.modify(pin, { noConnected: true })` may not persist in some
+EDA builds. Use the async state path:
 
 ```javascript
-const pin = pins.find(p => String(p.getState_PinNumber()) === '4');
+const pin = pins.find(
+  item => String(item.getState_PinNumber()) === '4'
+);
 const asyncPin = pin.toAsync();
 asyncPin.setState_NoConnected(true);
 await asyncPin.done();
@@ -64,7 +66,7 @@ await asyncPin.done();
 
 ## Wires and Nets
 
-Create a real wire between two points:
+Create a wire with an electrical net:
 
 ```javascript
 await eda.sch_PrimitiveWire.create(
@@ -76,42 +78,35 @@ await eda.sch_PrimitiveWire.create(
 );
 ```
 
-The wire's `net` argument is the electrical connectivity source. A plain
-`sch_PrimitiveText` is only decoration and does not connect pins by itself.
+A plain `sch_PrimitiveText` is not an electrical connection. The wire's net
+argument is the source of connectivity.
 
-The automatic wire attributes can be inspected per wire:
+Inspect automatic wire attributes through the parent wire:
 
 ```javascript
 const attrs = await eda.sch_PrimitiveAttribute.getAll(wireId);
-const name = attrs.find(a => a.getState_Key() === 'Name');
+const name = attrs.find(attr => attr.getState_Key() === 'Name');
 ```
 
-This is more reliable than `sch_PrimitiveAttribute.getAll()` without a parent
-in the current version.
-
 If automatic wire-name attributes and manual compact labels are both visible,
-they look duplicated and can produce a rendering artifact. In the final
-RingHome style:
+they can look duplicated or trigger rendering artifacts. Keep one visible form:
 
-- keep each wire's hidden `Name` attribute for connectivity;
-- set `valueVisible: false` on automatic wire names;
-- place compact attached text or a visible attribute only at the chosen label
-  position.
+- retain the wire's `Name` attribute for connectivity;
+- hide automatic visible names when manual labels are used;
+- do not place two text objects for the same net at the same point.
 
-`sch_PrimitiveAttribute.createNetLabel()` exists in the docs but returns
-`undefined` on the tested EDA build. Do not rely on it without testing.
+`sch_PrimitiveAttribute.createNetLabel()` is not reliable on every EDA build.
+Test it before relying on it.
 
-## Text Labels
-
-Create compact labels:
+## Compact Labels
 
 ```javascript
 await eda.sch_PrimitiveText.create(
   x,
   y,
-  'I2C_SDA',
+  'NET_NAME',
   0,
-  '#1565C0',
+  '#37474F',
   null,
   7,
   false,
@@ -121,24 +116,22 @@ await eda.sch_PrimitiveText.create(
 );
 ```
 
-Alignment values used in this project:
+Alignment values commonly used:
 
 - `2`: left middle
 - `5`: center
 - `6`: center bottom
 - `8`: right middle
 
-Keep adjacent labels in alternating offset rows. A stagger of roughly
-`+/-16` coordinate units prevented overlap for 10-unit pin pitch.
+For dense adjacent pins, alternate label offsets above and below the wire.
+Verify estimated text rectangles instead of assuming they fit.
 
-## Functional Block Rectangles
-
-The API signature is:
+## Functional Block Frames
 
 ```javascript
 await eda.sch_PrimitiveRectangle.create(
   left,
-  yArgument,
+  bottomY,
   width,
   height,
   8,
@@ -151,16 +144,14 @@ await eda.sch_PrimitiveRectangle.create(
 );
 ```
 
-In the current build, the second argument behaves like the bottom edge for
-vertical placement even though the docs call it `topLeftY`. To draw a box with
-screen bounds `top = y` and `height = h`, pass `y + h` as the second argument,
-then verify:
+The current API's vertical argument can behave like the bottom edge even
+though documentation calls it `topLeftY`. Verify the result:
 
 ```javascript
-const bbox = await eda.sch_Primitive.getPrimitivesBBox([rectId]);
+const bbox = await eda.sch_Primitive.getPrimitivesBBox([rectangleId]);
 ```
 
-Use `fillColor: 'none'` so wires remain visible.
+Use `fillColor: 'none'` so wires and labels remain visible.
 
 ## Verification
 
@@ -168,37 +159,36 @@ Component overlap:
 
 ```javascript
 const boxes = await Promise.all(
-  components.map(c =>
-    eda.sch_Primitive.getPrimitivesBBox([c.getState_PrimitiveId()])
+  components.map(component =>
+    eda.sch_Primitive.getPrimitivesBBox([
+      component.getState_PrimitiveId(),
+    ])
   )
 );
 ```
 
-Used-pin endpoint check:
+Wire endpoint and net check:
 
 ```javascript
 const wirePoints = [];
-for (const w of await eda.sch_PrimitiveWire.getAll()) {
+for (const wire of await eda.sch_PrimitiveWire.getAll()) {
   const flat = [];
   const walk = value => {
     if (typeof value === 'number') flat.push(value);
     else if (Array.isArray(value)) value.forEach(walk);
   };
-  walk(w.getState_Line());
+  walk(wire.getState_Line());
   for (let i = 0; i + 1 < flat.length; i += 2) {
-    wirePoints.push([flat[i], flat[i + 1], w.getState_Net()]);
+    wirePoints.push([flat[i], flat[i + 1], wire.getState_Net()]);
   }
 }
 ```
 
-Netlist check:
+Netlist:
 
 ```javascript
 const netlist = await eda.sch_Netlist.getNetlist('Protel2');
 ```
-
-Check that expected connector pins, UART, I2C, and power nets appear in the
-result.
 
 DRC:
 
@@ -206,19 +196,20 @@ DRC:
 const drc = await eda.sch_Drc.check(true, false, true);
 ```
 
-The tested version returns an aggregate such as
-`[{ type: 'warn', count: 4 }]`, not individual messages. Report that
-limitation rather than inventing details.
+Some versions return only an aggregate such as
+`[{ type: 'warn', count: 4 }]`. Report the limitation rather than inventing
+individual messages.
 
 ## Preview Export
 
-If `sch_ManufactureData.getPngFile()` is unavailable, navigate to the sheet
-region and capture the rendered canvas:
+If high-resolution export is unavailable, fit the whole page and capture the
+rendered canvas:
 
 ```javascript
-await eda.sch_Document.navigateToRegion(0, 2338, 0, 1654);
+await eda.sch_Document.navigateToRegion(0, pageWidth, 0, pageHeight);
 const blob = await eda.dmt_EditorControl.getCurrentRenderedAreaImage();
 ```
 
-Convert the returned Blob to base64 inside the EDA runtime and save it from
-the bridge client.
+Convert the Blob to base64 inside the EDA runtime and save it from the bridge
+client. In the final response, embed the saved image with an absolute local
+path.

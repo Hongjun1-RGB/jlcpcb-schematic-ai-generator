@@ -1,113 +1,99 @@
 ---
-name: easyeda-schematic-builder
-description: Build, repair, and explain production-minded circuit schematics in EasyEDA Pro / 嘉立创EDA. Use when the user asks to draw or revise a schematic, preserve firmware pin compatibility, select smaller or fewer parts, inspect datasheets, work through the live EasyEDA API, remove overlaps or bad adjacent labels, frame functional blocks, or verify nets and DRC.
+name: jlcpcb-schematic-ai-generator
+description: Generate, revise, and verify production-minded circuit schematics in EasyEDA Pro / 嘉立创EDA. Use when the user asks to draw a PCB schematic, preserve firmware pin compatibility, select smaller or fewer parts, inspect chip datasheets, remove component or label overlap, frame functional blocks, validate nets and DRC, or display the finished schematic image.
 metadata:
-  short-description: Draw and verify EasyEDA schematics
+  short-description: 嘉立创PCB原理图AI生成
 ---
 
-# EasyEDA Schematic Builder
+# 嘉立创PCB原理图AI生成
 
-Use this skill for live schematic construction in EasyEDA Pro / 嘉立创EDA,
-especially when the result must be readable, electrically credible, and close
-to production rather than a loose collection of symbols.
+Use this skill for live schematic work in EasyEDA Pro / 嘉立创EDA. The goal is
+a readable, electrically credible schematic that is close to production, not a
+loose collection of symbols.
 
-Read [ringhome-smart-ring.md](ringhome-smart-ring.md)
-when the request is for the RingHome smart ring or should follow the final
-reference style from that project.
+Read [schematic-design-rules.md](schematic-design-rules.md)
+for the reusable engineering and visual rules.
 
 Read [easyeda-api-playbook.md](easyeda-api-playbook.md)
 when using the live EDA bridge or when API behavior is uncertain.
 
-Use [check_schematic_layout.js](check_schematic_layout.js) as a
-starting point for layout, endpoint, net, and crossing checks. If the bridge
-does not expose the required API, inspect the installed EasyEDA docs instead
-of guessing method names.
+Use [check_schematic_layout.js](check_schematic_layout.js) for
+layout, endpoint, net, and crossing checks.
 
-## Outcome Standard
+## Required Outcome
 
-Deliver a schematic that is:
+The finished schematic must:
 
-- electrically complete for the requested behavior;
-- compatible with the existing firmware unless the user explicitly approves a
-  code change;
-- built from the selected chips whenever practical;
-- stable with required decoupling, pull-ups, reset, and strap-pin handling;
-- compact without forcing unrelated parts into one region;
-- visually separated by function, with no component or label overlap;
-- accompanied by a concise explanation of each functional block and the
-  datasheet reason for the connections.
+- implement the requested behavior and interfaces;
+- preserve the agreed chip choices and firmware pin mapping unless the user
+  explicitly approves a code or architecture change;
+- use datasheet-required decoupling, power rails, pull-ups, reset behavior, and
+  strap-pin handling;
+- minimize component count without sacrificing stability or reliability;
+- contain no overlapping components, labels, or block frames;
+- have no electrically distinct wires crossing;
+- use real wire nets, not decorative floating text;
+- be split into clearly framed functional blocks with short role titles;
+- pass independent endpoint, netlist, overlap, and DRC checks;
+- include an exported or captured finished image in the final response.
 
-Do not replace the user's chosen chips merely because another part is easier.
-Do not place a complete finished module where the request calls for a
-component-level circuit, except when the module is the deliberate minimum
-radio/system solution, such as ESP32-C3-MINI-1 for RF and antenna integration.
+## Workflow
 
-## Required Workflow
-
-1. Gather the firmware pin map, existing wiring notes, mechanical constraints,
-   and any user-provided datasheets before editing the schematic.
-2. Look up the relevant official datasheets. Verify power rails, required
-   capacitors, reset and strap pins, unused-pin treatment, and pin type.
-3. Make a complete net map before drawing. Mark every used pin and every unused
-   non-connect pin explicitly.
-4. Lay out by function. Keep large chips, headers, connectors, and polar parts
-   separated. Reserve open routing channels between blocks.
-5. Draw real wires with explicit net names. A plain text label alone is not an
-   electrical connection.
-6. Use short stubs and compact labels. Avoid large power flags or duplicated
-   labels unless the user requests them. Keep repeated label text from
-   overlapping adjacent pins.
-7. Add colored, unfilled rectangles around functional blocks. Put a concise
-   role title inside each rectangle. In the RingHome reference, use the block
-   layout in `ringhome-smart-ring.md`.
-8. Save the page, then verify:
-   - every used pin has a wire with the expected net;
-   - every unused pin has `noConnected` set;
+1. Gather requirements, firmware pin maps, interface definitions, mechanical
+   constraints, and any existing wiring documents.
+2. Inspect the relevant official datasheets. Record the required power rails,
+   decoupling, pull-ups, reset pins, straps, reserved pins, and unused-pin
+   treatment before drawing.
+3. Build the complete pin-to-net map. Mark every used pin and every unused
+   no-connect pin explicitly.
+4. Place components by function. Keep ICs, connectors, headers, and polar parts
+   separated enough that designators, pin names, and labels remain readable.
+5. Draw real wires with explicit net names. Use compact attached labels. Avoid
+   large power flags, duplicated labels, floating labels, and labels so close
+   that adjacent pins visually merge.
+6. Add colored, unfilled rectangles around functional blocks and place a short
+   role title inside each frame.
+7. Save the page and run the verification pass:
+   - every used pin has the expected net;
+   - every unused pin is marked no-connect;
    - component bounding boxes do not overlap;
+   - visible labels do not overlap components or each other;
    - different-net wire segments do not cross;
-   - visible label rectangles do not overlap components or each other;
-   - the exported netlist contains the expected connectors and UART/I2C/power
-     nets;
-   - DRC is checked and every residual warning is explained.
-9. Export or capture the current schematic preview and update the project's
-   schematic notes.
+   - the exported netlist includes all expected connectors, buses, and power
+     rails;
+   - DRC is checked and every remaining warning is explained accurately.
+8. Export or capture the finished schematic.
+9. In the final response, embed the finished image using an absolute local
+   Markdown image path and explain each functional block and the datasheet
+   basis for its connections.
 
-## Schematic Style
+## Engineering Rules
 
-Use quiet engineering colors and functional grouping. Keep the schematic
-dense enough to scan but not compressed:
+- Do not replace the user's chosen chip merely because another part is easier
+  to place.
+- Do not place a complete finished module where the request calls for a
+  component-level circuit, except when the module is deliberately the minimum
+  RF, power, or interface solution.
+- Prefer small packages only when voltage, current, thermal, and assembly
+  constraints permit them.
+- Keep required decoupling even when reducing component count.
+- Preserve the original GPIO assignment unless the user asks for a functional
+  improvement. If a pin map must change, state the consequence and update the
+  schematic and code together.
+- Treat unused pins according to the datasheet and the chosen device pin type.
+- Do not invent DRC details. If the EDA version returns only a summary, report
+  that limitation and state what was verified independently.
 
-- one block per purpose;
-- one clear net name per connection or bus;
-- labels attached to the wire they describe;
-- no isolated labels floating in empty space;
-- no overlapping designators, values, net labels, or pin names;
-- no giant text from duplicated visibility attributes;
-- no short parallel runs so close that adjacent pins visually merge.
+## Visual Rules
 
-If the EDA version displays both automatic wire-name attributes and manually
-created labels, keep only one visible form. The reference project hides the
-automatic visible names and uses compact attached text at the stub endpoints,
-while retaining the wire's hidden net attribute for electrical connectivity.
-
-## Firmware Compatibility
-
-Preserve the existing GPIO assignment unless the user explicitly asks for a
-functional improvement. If a new peripheral cannot fit the existing pin map,
-state the tradeoff, update the desktop firmware documentation if authorized,
-and make the schematic and code agree.
-
-For RingHome, the final pin map and exact net names are in
-[ringhome-smart-ring.md](ringhome-smart-ring.md).
-
-## Validation Rules
-
-Do not call a schematic finished just because the symbols are placed. Use the
-live API or exported netlist to prove the relevant connections.
-
-When the installed EDA version only returns a DRC summary, report that
-limitation accurately. Do not invent individual DRC messages. State which
-checks were performed independently and what remains unresolved.
+- One functional purpose per framed block.
+- One clear net name per connection or bus.
+- Small labels attached to the wire they describe.
+- No duplicated automatic and manual net names.
+- No giant text from hidden/visible attribute conflicts.
+- Quiet engineering colors; use color to distinguish function, not decoration.
+- Leave routing channels between blocks.
+- Keep the final image clean enough to inspect without zooming into every pin.
 
 Never include credentials, tokens, private repository data, or customer data
-in the skill, its references, screenshots, or examples.
+in the skill, its references, images, or examples.

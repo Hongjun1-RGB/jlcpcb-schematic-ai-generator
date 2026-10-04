@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect width="1600" height="900" fill="#f7f8fa"/>
+  <text x="70" y="70" fill="#0d47a1" font-family="Arial, sans-serif" font-size="36" font-weight="700">
+    Functional-block schematic style
+  </text>
+  <rect x="60" y="120" width="460" height="300" rx="14" fill="none" stroke="#1565c0" stroke-width="4"/>
+  <rect x="570" y="120" width="460" height="300" rx="14" fill="none" stroke="#00897b" stroke-width="4"/>
+  <rect x="1080" y="120" width="460" height="300" rx="14" fill="none" stroke="#f57c00" stroke-width="4"/>
+  <rect x="60" y="470" width="460" height="330" rx="14" fill="none" stroke="#c62828" stroke-width="4"/>
+  <rect x="570" y="470" width="460" height="330" rx="14" fill="none" stroke="#6a1b9a" stroke-width="4"/>
+  <rect x="1080" y="470" width="460" height="330" rx="14" fill="none" stroke="#2e7d32" stroke-width="4"/>
+  <text x="90" y="165" fill="#1565c0" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    MCU / control
+  </text>
+  <text x="600" y="165" fill="#00897b" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    Sensors / analog
+  </text>
+  <text x="1110" y="165" fill="#f57c00" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    Power and charging
+  </text>
+  <text x="90" y="515" fill="#c62828" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    Programming / reset
+  </text>
+  <text x="600" y="515" fill="#6a1b9a" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    External interfaces
+  </text>
+  <text x="1110" y="515" fill="#2e7d32" font-family="Arial, sans-serif" font-size="28" font-weight="700">
+    Decoupling / passives
+  </text>
+  <g fill="#37474f" font-family="Arial, sans-serif" font-size="20">
+    <text x="90" y="210">Firmware-compatible pin map</text>
+    <text x="90" y="245">Boot, enable, straps</text>
+    <text x="600" y="210">Datasheet support pins</text>
+    <text x="600" y="245">Local bypass capacitors</text>
+    <text x="1110" y="210">Input protection and rails</text>
+    <text x="1110" y="245">Compact regulators</text>
+    <text x="90" y="560">Removable programming header</text>
+    <text x="90" y="595">Reset and boot access</text>
+    <text x="600" y="560">Connector pin order</text>
+    <text x="600" y="595">Compact net labels</text>
+    <text x="1110" y="560">Required decoupling retained</text>
+    <text x="1110" y="595">No overlapping labels</text>
+  </g>
+</svg>
